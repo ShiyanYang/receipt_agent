@@ -1,25 +1,32 @@
 # receipt_agent
 
 Context
-Ordering shopping list each week is important but also tedious. I need to plan meals each day and figure out what ingredients I need to order. I want to have diverse and nice diets but I also want to minimize the time spending on creating the shopping list. Also, it's that possible to use the agent to minimize the shopping cost without sacrafice the diet quality?
+Each days, I need to figure out what we want to eat and what ingredients I need to use. Creating the shopping list for this, especially with a blanace of nutrition and cost, could be mentally exhausted. How can we use AI assist us to prepare for a health and affordable shop list?
 
-Can I let AI give me a list of dishes to cook to meet my requirements?
-Can I let AI to tell me what to buy for specific dishes?
-Can I let AI to simplify the ingredients of each dishes to reduce the prep time?
-Can I let AI to tell me how to cook the dishes?
 
-If AI can help me one this, it may save my time and mental workload for shopping and prepare food daily.
+Requirements
+1. AI can plan the breakfasts, lunchs, and dinners for the future X days for me.
+2. AI can tell me how to cook the meal
+3. AI can output the ingredients of each meal and estimate their price
+4. AI can know what is in the pantry
+5. AI can generate the shopping list
+
 
 Goal - develop an agent to plan for healthy and affordable food
 Stage 1
+- Create a MVP to creat the meal list based on the conversation with users
+- The agnet can decide asking question or generating meal plan
+- The agent should have memory
+- The agnet should ask the the right questions, collecting information from the user for the best meal plan
+
+
+Stage 2
 - Create a MVP to generate a shopping list based on the input: dish names and existing ingredients
 - The agent should be able to edit the pantry, generate shopping list, it should have memory about the conversations within that week, it should be able to plan and evaluate its output
 
-Stage 2
+Stage 3
 - Create a MVP to generate cooking steps based on the input: ingredients
 
-Stage 3
-- Create a MVP to generate a schedule for cooking and maximize its nutrion levels for specific health goal
 
 Requirements
 - The output of AI should be reliable

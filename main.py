@@ -8,18 +8,16 @@ def main():
     receipt_agent = Agent(model_path)
     print(f"Agent is using {os.path.basename(model_path)}")
 
-    print("Hi, I am your shoppling assistance. Could you please tell me what dishes you want to cook this week? ")
+    receipt_agent=Agent(model_path)
+    shopping_list=receipt_agent.generate_meal_plan()
+    
+    # need a function here to parse the output into a list
 
-    while True:
-        conversation = input("> ")
-        # make this into a cli conversation
-        if 'exit' not in conversation: 
-            receipt_agent=Agent(model_path)
-            receipt_agent.search_pantry()
-            answer=receipt_agent.generate_shopping_list(conversation)
-            print(f"Here is my answer {answer}") 
-        else:        
-            break
+    pantry_list=receipt_agent.search_pantry()
 
+    # need a function here to exclude what is in the pantry
+    
+    #print(f"The shopping list is: {final_shopping_list}")
+    
 if __name__ == "__main__":
     main()

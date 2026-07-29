@@ -44,39 +44,53 @@ class Agent:
             self.pantry_list="nothing"
         else:
             self.pantry_list = items
+    
+
+    def generate_meal_plan(self):
         
+        system_prompt = f"""You role is to assistant the user for meal planning and generate the shopping list.
+
+        CRITICAL INSTRUCTIONS: 
+        1. The first question is always about the number of days for meal planning.
+        2. Your need to deeply understand the user's needs and feelings.
+        3. You either ask a follow-up question or generate the meal plan.
+        4. Once you have enough information, generate a meal plan for each day.
+        5. In the end, generate the shopping list based on the meal plan.
         
-    def generate_shopping_list(self, meal: str):
-        try:
-            response=self.llm.create_chat_completion( # a chat completion is an api format with a list of messages. How does this related to mcp?
-                # make this messages into plannings
-                messages=[
-                    {"role": "system", "content":"you are a chief helping housewife prepare dinner."},
-                    {"role":"user","content": f"I plan to cook {meal}."},
-                    {"role":"user", "content":f"Now, I have {self.pantry_list} in my pantry."},
-                    # insert memory into the message
-                    #{"role":"system", "content":f"This is what is already in the shopping list: {self.memory.get_all()}"}, 
-                    {"role":"user", "content":"What are the new items that I need to put into my shopping list?"}
-                ],
-                max_tokens=512,
-                temperature=0,
-                # how can i reliabley control the format of the output only as the list of shopping items?
-                tools=self.tools, # trying to control the format of the output
-                tool_choice={"type":"function", "function":{"name":"update_shopping_list"}}
-            )
+        Response about meal plan (markdown table only; first column: day, second column: breakfast, lunch, or dinner, third colum: the name of the mean, fourth column: ingredients)
+        Response about shopping list (JSON format only)
+        Require JSON format:
+        {{"Output": "Shopping Item", "Category":"the category of ingredients", "Shopping List": "the items of ingredients"}}
+        """
+        print("Hi I am your meal planning buddy. How many days do you want me to prepare for your meal?")
+        
+        response=""
+        messages = [
+            {"role":"system", "content": system_prompt}
+            ]
+         
+        while True:  
+            user_input = input ("You: ")
+            if user_input.strip().lower() in ('exit','quit','bye'):
+                print("See you next time : )")
+                break
             
-            tool_call = response["choices"][0]["message"]["tool_calls"][0]
-        
-            args=json.loads(tool_call["function"]["arguments"])
-            print(args)
-            if self.memory:
-                self.memory.add(args['new_items'])
-        
-        except (KeyError, IndexError, json.JSONDecodeError) as e:
-            print(f"⚠️ Error in generate_shopping_list: {e}")
-            return []
-        except Exception as e:
-            print(f"⚠️ Unexpected error: {e}")
-            return [] 
-        
-        return args["new_items"]
+            messages.append({"role":"user","content": user_input})
+            
+            try:
+                response = self.llm.create_chat_completion(
+                    messages = messages,
+                    temperature = 0.0,
+                    max_tokens = 1024,
+                ) 
+                response = response["choices"][0]["message"]["content"].strip()
+                print(f"Answer: {response}")
+                if "Output" in response and "Category" in response and "Shopping List" in response:
+                   shopping_list=response
+                messages.append({"role": "assistant", "content": response})
+                
+            except (KeyError, IndexError, AttributeError) as e:
+                    print('Create_chat_completion is not available ')
+                    raise e
+            
+        return shopping_list
