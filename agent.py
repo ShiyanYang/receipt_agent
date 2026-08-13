@@ -2,27 +2,26 @@
 from llama_cpp import Llama
 from pantry import list_items
 from memory import Memory
+from config import config
 import json
 import re
 import logging
 from typing import Optional, Dict, List, Any
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class Agent:
     """AI agent generates the shopping list."""
 
     def __init__(self, model_path: str):
-        """Initialize the agent. """
+        """Initialize the agent with model and configuration."""
         self.llm = Llama(
             model_path=model_path,
-            n_ctx=2048,
-            n_threads=4,
+            n_ctx=config.LLM_N_CTX,
+            n_threads=config.LLM_N_THREADS,
             verbose=False
         )
-        self.pantry_list= None
+        self.pantry_list = None
         self.memory = Memory()
         self.tools = [{
                 "type": "function",
@@ -90,9 +89,9 @@ class Agent:
             
             try:
                 response = self.llm.create_chat_completion(
-                    messages = messages,
-                    temperature = 0.0,
-                    max_tokens = 1024,
+                    messages=messages,
+                    temperature=config.LLM_TEMPERATURE,
+                    max_tokens=config.LLM_MAX_TOKENS,
                 ) 
                 content = response["choices"][0]["message"]["content"].strip()
                 

@@ -50,10 +50,7 @@ class Memory:
             return False
         
         if item not in self.items:
-            self.items.append(item)
-            self._save_to_file()
-            return True
-        return False
+           return self.items.append(item)
 
     def get_all(self) -> list[str]:
         """Return all items in memory."""
@@ -83,5 +80,5 @@ class Memory:
         return len(self.items)
     
     def __repr__(self) -> str:
-        """String representation of memory."""
+        """String representation of memory. """
         return f"Memory({len(self.items)} items)"

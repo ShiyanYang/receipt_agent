@@ -1,18 +1,13 @@
 from agent import Agent
-import os
-import logging
+from config import config, logger
 import sys
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import os
 
 def main():
     try:
-        model_path = os.getenv("MODEL_PATH", "./models/llama-3-8b-instruct.gguf")
-        
-        if not os.path.exists(model_path):
-            logger.error(f"Model file not found: {model_path}")
-            sys.exit(1)
+        # Validate configuration
+        config.validate()
+        model_path = config.MODEL_PATH
         
         logger.info(f"Agent is using {os.path.basename(model_path)}")
         receipt_agent = Agent(model_path)
