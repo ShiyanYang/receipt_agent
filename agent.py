@@ -86,6 +86,8 @@ class Agent:
                 break
             
             messages.append({"role":"user","content": user_input})
+            # 💾 Save user input to persistent memory
+            self.memory.add(f"User: {user_input}")
             
             try:
                 response = self.llm.create_chat_completion(
@@ -100,7 +102,9 @@ class Agent:
                     raise e
             
             print(f"Answer:{content}")
-            messages.append({"role":"assistant", "content":content})    
+            messages.append({"role":"assistant", "content":content})
+            # 💾 Save assistant response to persistent memory
+            self.memory.add(f"Assistant: {content}")    
 
             candidate = content.strip()
             

@@ -44,13 +44,17 @@ class Memory:
             logger.error(f"Failed to save memory to file: {e}")
 
     def add(self, item: str) -> bool:
-        """Add item to memory if not already present."""
+        """Add item to memory if not already present and save to disk."""
         if not isinstance(item, str):
             logger.warning(f"Memory item must be string, got {type(item).__name__}")
             return False
         
         if item not in self.items:
-           return self.items.append(item)
+            self.items.append(item)
+            self._save_to_file()  # ← Save after adding!
+            logger.info(f"Added to memory: {item}")
+            return True
+        return False
 
     def get_all(self) -> list[str]:
         """Return all items in memory."""
@@ -80,5 +84,5 @@ class Memory:
         return len(self.items)
     
     def __repr__(self) -> str:
-        """String representation of memory. """
+        """String representation of memory."""
         return f"Memory({len(self.items)} items)"
