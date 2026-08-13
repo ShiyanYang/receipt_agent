@@ -3,11 +3,16 @@ from llama_cpp import Llama
 from pantry import list_items
 from memory import Memory
 import json
+import re
+import logging
+from typing import Optional, Dict, List, Any
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class Agent:
-    """
-    An AI agent that can generate the missing ingradients as shopping list.
-    """
+    """AI agent generates the shopping list."""
 
     def __init__(self, model_path: str):
         """Initialize the agent. """
@@ -37,34 +42,40 @@ class Agent:
                     }
                 }
             }]
-
-    def search_pantry(self):
-        items = list_items()
-        if not items:
-            self.pantry_list="nothing"
-        else:
-            self.pantry_list = items
+        
+    def search_pantry(self) -> Optional[List[str]]:
+        """Search and cache pantry items."""
+        try:
+            items = list_items()
+            self.pantry_list = items if items else []
+            return self.pantry_list
+        except Exception as e:
+            logger.error(f"Failed to search pantry: {e}")
+            return []
     
 
     def generate_meal_plan(self):
+        """Generate the meal plan over the next X days."""
         
-        system_prompt = f"""You role is to assistant the user for meal planning and generate the shopping list.
+        system_prompt = """You role is to assistant the user for meal planning.
 
         CRITICAL INSTRUCTIONS: 
         1. The first question is always about the number of days for meal planning.
-        2. Your need to deeply understand the user's needs and feelings.
-        3. You either ask a follow-up question or generate the meal plan.
-        4. Once you have enough information, generate a meal plan for each day.
-        5. In the end, generate the shopping list based on the meal plan.
-        
-        Response about meal plan (markdown table only; first column: day, second column: breakfast, lunch, or dinner, third colum: the name of the mean, fourth column: ingredients)
-        Response about shopping list (JSON format only)
-        Require JSON format:
-        {{"Output": "Shopping Item", "Category":"the category of ingredients", "Shopping List": "the items of ingredients"}}
+        2. Your need to understand the user's needs.
+        3. After each question, your next response is either a follow-up question or the meal plan.
+        4. The meal plan response is a ONLY JSON format. It must follow the following schema. 
+    '''
+    [
+      {"day": "Day 1", "meal_type": "breakfast", "meal_name": "...", "ingredients": ["...", "..."]},
+      {"day": "Day 1", "meal_type": "lunch", "meal_name": "...", "ingredients": ["...", "..."]}
+    ]
+    '''
         """
-        print("Hi I am your meal planning buddy. How many days do you want me to prepare for your meal?")
-        
-        response=""
+
+        print("Hi I am your meal planning assistant. How many days do you want to prepare for meals?")
+        meal_plan = None
+        response="" # create an empty response first
+
         messages = [
             {"role":"system", "content": system_prompt}
             ]
@@ -83,14 +94,90 @@ class Agent:
                     temperature = 0.0,
                     max_tokens = 1024,
                 ) 
-                response = response["choices"][0]["message"]["content"].strip()
-                print(f"Answer: {response}")
-                if "Output" in response and "Category" in response and "Shopping List" in response:
-                   shopping_list=response
-                messages.append({"role": "assistant", "content": response})
+                content = response["choices"][0]["message"]["content"].strip()
                 
             except (KeyError, IndexError, AttributeError) as e:
                     print('Create_chat_completion is not available ')
                     raise e
             
-        return shopping_list
+            print(f"Answer:{content}")
+            messages.append({"role":"assistant", "content":content})    
+
+            candidate = content.strip()
+            
+            try:
+                match = re.search(r'\[\s*\{.*?\}\s*\]', candidate, re.DOTALL)
+
+                if match:
+                    parsed = json.loads(match.group())
+                    if isinstance(parsed, list) and all(
+                        isinstance(item, dict) and {"day", "meal_type", "meal_name", "ingredients"} <= item.keys()
+                        for item in parsed
+                    ):
+                        meal_plan = parsed
+                        print("Meal plan generated.")
+                        break
+                
+            except (json.JSONDecodeError, TypeError):
+                pass
+               
+        return meal_plan
+    
+    def _normalize(self, item: str) -> str:
+        """Lowercase and strip whitespace/punctuation so 'Tomato', 'tomato ', 'Tomatoes' compare cleanly."""
+        if not isinstance(item, str):
+            raise TypeError(f"Expected string, got {type(item).__name__}")
+        return item.strip().lower()
+
+    def _flatten_ingredients(self, meal_plan: List[Dict[str, Any]]) -> List[str]:
+        """Turn the meal plan into a flat list of ingredient entries."""
+        if not isinstance(meal_plan, list):
+            raise TypeError(f"Expected list, got {type(meal_plan).__name__}")
+        
+        all_ingredients = []
+        for meal in meal_plan:
+            ingredients = meal.get("ingredients", [])
+            if isinstance(ingredients, list):
+                all_ingredients.extend(ingredients)
+        return all_ingredients
+    
+    def _filter_out_pantry_items(self, ingredients: List[str], pantry_list: Optional[List[str]]) -> List[str]:
+        """Remove ingredient entries that are already available in the pantry."""
+        if not isinstance(ingredients, list):
+            raise TypeError(f"Expected list, got {type(ingredients).__name__}")
+        
+        pantry_list = pantry_list or []
+        pantry_set = {self._normalize(item) for item in pantry_list if isinstance(item, str)}
+        
+        filtered_ingredients = []
+        seen = set()
+        for entry in ingredients:
+            if isinstance(entry, str):
+                normalized = self._normalize(entry)
+                if normalized not in pantry_set and normalized not in seen:
+                    filtered_ingredients.append(entry)
+                    seen.add(normalized)
+        
+        return filtered_ingredients
+    
+    
+    def generate_shopping_list(self, meal_plan: Optional[List[Dict[str, Any]]]) -> List[str]:
+        """Generate the shopping list that is not in the pantry."""
+        if meal_plan is None:
+            logger.warning("No meal plan provided")
+            return []
+        
+        try:
+            all_ingredients = self._flatten_ingredients(meal_plan)
+            pantry_list = self.search_pantry()
+            needed = self._filter_out_pantry_items(all_ingredients, pantry_list)
+            
+            if not needed:
+                logger.info("All ingredients available in pantry")
+                return []
+            
+            logger.info(f"Generated shopping list with {len(needed)} items")
+            return needed
+        except Exception as e:
+            logger.error(f"Failed to generate shopping list: {e}")
+            raise
