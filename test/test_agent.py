@@ -216,3 +216,20 @@ def test_generate_shopping_list_handles_missing_ingredients_field(agent):
         
         # Should only include ingredients from second meal
         assert set(r.lower() for r in result) == {"tomato", "lettuce"}
+
+
+def test_generate_meal_plan_accepts_markdown_wrapped_json(agent):
+    """Test meal-plan parser accepts valid JSON wrapped in markdown fences."""
+    response = "```json\n[{\"day\": \"Day 1\", \"meal_type\": \"breakfast\", \"meal_name\": \"Omelet\", \"ingredients\": [\"eggs\", \"spinach\"]}]\n```"
+
+    agent.llm.create_chat_completion = MagicMock(return_value={
+        "choices": [{"message": {"content": response}}]
+    })
+    agent.memory.add = MagicMock()
+
+    with patch("builtins.input", side_effect=["3", "exit"]):
+        meal_plan = agent.generate_meal_plan()
+
+    assert meal_plan is not None
+    assert meal_plan[0]["meal_type"] == "breakfast"
+    assert meal_plan[0]["ingredients"] == ["eggs", "spinach"]

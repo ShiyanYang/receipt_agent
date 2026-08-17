@@ -1,0 +1,93 @@
+{
+  "summary": {
+    "model": "llama-3-8b-instruct.gguf",
+    "iterations": 5,
+    "timeouts": 0,
+    "errors": 5,
+    "stuck_or_possible_loop": true,
+    "time_seconds": {
+      "avg": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "meal_plans": {
+      "unique_count": 1,
+      "example": "None",
+      "max_consecutive_identical": 5
+    },
+    "shopping_lists": {
+      "unique_count": 1,
+      "avg_length_estimate": 1,
+      "example": "None",
+      "max_consecutive_identical": 5
+    }
+  },
+  "runs": [
+    {
+      "iteration": 1,
+      "timeout": false,
+      "error": "EOF when reading a line",
+      "meal_time": null,
+      "shopping_time": null,
+      "total_time": null,
+      "raw_meal_plan": "None",
+      "raw_shopping_list": "None",
+      "normalized_shopping_list": [],
+      "is_ingredient_list": false,
+      "shopping_list_length_est": 1
+    },
+    {
+      "iteration": 2,
+      "timeout": false,
+      "error": "EOF when reading a line",
+      "meal_time": null,
+      "shopping_time": null,
+      "total_time": null,
+      "raw_meal_plan": "None",
+      "raw_shopping_list": "None",
+      "normalized_shopping_list": [],
+      "is_ingredient_list": false,
+      "shopping_list_length_est": 1
+    },
+    {
+      "iteration": 3,
+      "timeout": false,
+      "error": "EOF when reading a line",
+      "meal_time": null,
+      "shopping_time": null,
+      "total_time": null,
+      "raw_meal_plan": "None",
+      "raw_shopping_list": "None",
+      "normalized_shopping_list": [],
+      "is_ingredient_list": false,
+      "shopping_list_length_est": 1
+    },
+    {
+      "iteration": 4,
+      "timeout": false,
+      "error": "EOF when reading a line",
+      "meal_time": null,
+      "shopping_time": null,
+      "total_time": null,
+      "raw_meal_plan": "None",
+      "raw_shopping_list": "None",
+      "normalized_shopping_list": [],
+      "is_ingredient_list": false,
+      "shopping_list_length_est": 1
+    },
+    {
+      "iteration": 5,
+      "timeout": false,
+      "error": "EOF when reading a line",
+      "meal_time": null,
+      "shopping_time": null,
+      "total_time": null,
+      "raw_meal_plan": "None",
+      "raw_shopping_list": "None",
+      "normalized_shopping_list": [],
+      "is_ingredient_list": false,
+      "shopping_list_length_est": 1
+    }
+  ]
+}

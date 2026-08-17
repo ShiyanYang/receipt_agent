@@ -7,8 +7,26 @@ import json
 import re
 import logging
 from typing import Optional, Dict, List, Any
+from jsonschema import validate, ValidationError
 
 logger = logging.getLogger(__name__)
+
+MEAL_PLAN_SCHEMA = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "day": {"type": "string"},
+                    "meal_type": {"type": "string"},
+                    "meal_name": {"type": "string"},
+                    "ingredients": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                    }
+                },
+                "required": ["day", "meal_type", "meal_name", "ingredients"]
+                }
+            }
 
 class Agent:
     """AI agent generates the shopping list."""
@@ -52,7 +70,7 @@ class Agent:
             logger.error(f"Failed to search pantry: {e}")
             return []
     
-
+        
     def generate_meal_plan(self):
         """Generate the meal plan over the next X days."""
         
@@ -68,7 +86,7 @@ class Agent:
       {"day": "Day 1", "meal_type": "breakfast", "meal_name": "...", "ingredients": ["...", "..."]},
       {"day": "Day 1", "meal_type": "lunch", "meal_name": "...", "ingredients": ["...", "..."]}
     ]
-    '''
+    ''' 5. For each meal, there are no mroe than 7 ingredients. Please choose the ingredeients that are essential for the meal.
         """
 
         print("Hi I am your meal planning assistant. How many days do you want to prepare for meals?")
@@ -86,7 +104,7 @@ class Agent:
                 break
             
             messages.append({"role":"user","content": user_input})
-            # 💾 Save user input to persistent memory
+            # Save user input to persistent memory
             self.memory.add(f"User: {user_input}")
             
             try:
@@ -103,25 +121,22 @@ class Agent:
             
             print(f"Answer:{content}")
             messages.append({"role":"assistant", "content":content})
-            # 💾 Save assistant response to persistent memory
+            # Save assistant response to persistent memory
             self.memory.add(f"Assistant: {content}")    
-
+            #TODO: regex can be brittle, consider using a more robust JSON extraction method
             candidate = content.strip()
             
             try:
                 match = re.search(r'\[\s*\{.*?\}\s*\]', candidate, re.DOTALL)
-
                 if match:
                     parsed = json.loads(match.group())
-                    if isinstance(parsed, list) and all(
-                        isinstance(item, dict) and {"day", "meal_type", "meal_name", "ingredients"} <= item.keys()
-                        for item in parsed
-                    ):
-                        meal_plan = parsed
-                        print("Meal plan generated.")
-                        break
-                
-            except (json.JSONDecodeError, TypeError):
+                    validate(instance=parsed, schema=MEAL_PLAN_SCHEMA)
+                    meal_plan = parsed
+                    print("Meal plan generated.")
+                    break
+                       
+            except (json.JSONDecodeError, TypeError, ValidationError) as e:
+                print(f"Error validating meal plan: {e}")
                 pass
                
         return meal_plan
@@ -162,8 +177,8 @@ class Agent:
                     seen.add(normalized)
         
         return filtered_ingredients
-    
-    
+
+        
     def generate_shopping_list(self, meal_plan: Optional[List[Dict[str, Any]]]) -> List[str]:
         """Generate the shopping list that is not in the pantry."""
         if meal_plan is None:
