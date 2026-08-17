@@ -1,6 +1,24 @@
-models/
+# Python cache
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+
+# Model files
+*.gguf
 models/
-__pycache__/
-models/
-__pycache__/
+
+# OS files
+.DS_Store
+*.tmp
+
+# Generated runtime data
+memory/*.json
+data/*.json
