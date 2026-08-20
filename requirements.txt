@@ -1,2 +1,3 @@
-llama-cpp-python==0.2.72
+mlx-lm
 python-dotenv==1.0.0
+tqdm==4.66.4

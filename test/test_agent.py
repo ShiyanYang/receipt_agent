@@ -18,8 +18,10 @@ from agent import Agent
 
 @pytest.fixture
 def agent():
-    """Create an Agent instance with mocked Llama LLM."""
-    with patch("agent.Llama"):
+    """Create an Agent instance with a mocked MLX model and tokenizer."""
+    mock_tokenizer = MagicMock()
+    mock_tokenizer.apply_chat_template.return_value = "prompt"
+    with patch("agent.load", return_value=(MagicMock(), mock_tokenizer)):
         with patch("agent.Memory"):
             return Agent(model_path="mock/path/to/model.gguf")
 
@@ -222,13 +224,12 @@ def test_generate_meal_plan_accepts_markdown_wrapped_json(agent):
     """Test meal-plan parser accepts valid JSON wrapped in markdown fences."""
     response = "```json\n[{\"day\": \"Day 1\", \"meal_type\": \"breakfast\", \"meal_name\": \"Omelet\", \"ingredients\": [\"eggs\", \"spinach\"]}]\n```"
 
-    agent.llm.create_chat_completion = MagicMock(return_value={
-        "choices": [{"message": {"content": response}}]
-    })
-    agent.memory.add = MagicMock()
+    with patch("agent.generate", return_value=response):
+        agent.tokenizer.apply_chat_template.return_value = "prompt"
+        agent.memory.add = MagicMock()
 
-    with patch("builtins.input", side_effect=["3", "exit"]):
-        meal_plan = agent.generate_meal_plan()
+        with patch("builtins.input", side_effect=["3", "exit"]):
+            meal_plan = agent.generate_meal_plan()
 
     assert meal_plan is not None
     assert meal_plan[0]["meal_type"] == "breakfast"

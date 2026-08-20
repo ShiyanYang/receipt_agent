@@ -1,12 +1,12 @@
 
-from llama_cpp import Llama
+from mlx_lm import generate, load
 from pantry import list_items
 from memory import Memory
 from config import config
 import json
 import re
 import logging
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, Tuple
 from jsonschema import validate, ValidationError
 
 logger = logging.getLogger(__name__)
@@ -31,14 +31,18 @@ MEAL_PLAN_SCHEMA = {
 class Agent:
     """AI agent generates the shopping list."""
 
+    _model_cache: Dict[str, Tuple[Any, Any]] = {}
+
+    @classmethod
+    def get_model(cls, model_path: str) -> Any:
+        """Load a model once per path and reuse it across agent instances."""
+        if model_path not in cls._model_cache:
+            cls._model_cache[model_path] = load(model_path)
+        return cls._model_cache[model_path]
+
     def __init__(self, model_path: str):
         """Initialize the agent with model and configuration."""
-        self.llm = Llama(
-            model_path=model_path,
-            n_ctx=config.LLM_N_CTX,
-            n_threads=config.LLM_N_THREADS,
-            verbose=False
-        )
+        self.llm, self.tokenizer = self.get_model(model_path)
         self.pantry_list = None
         self.memory = Memory()
         self.tools = [{
@@ -59,6 +63,22 @@ class Agent:
                     }
                 }
             }]
+
+    def generate_text(self, messages: List[Dict[str, str]], temperature: Optional[float] = None,
+                      max_tokens: Optional[int] = None) -> str:
+        """Generate a response from chat messages using the MLX model."""
+        prompt = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        return generate(
+            self.llm,
+            self.tokenizer,
+            prompt=prompt,
+            max_tokens=max_tokens or config.LLM_MAX_TOKENS,
+            temp=config.LLM_TEMPERATURE if temperature is None else temperature,
+        ).strip()
         
     def search_pantry(self) -> Optional[List[str]]:
         """Search and cache pantry items."""
@@ -108,22 +128,15 @@ class Agent:
             self.memory.add(f"User: {user_input}")
             
             try:
-                response = self.llm.create_chat_completion(
-                    messages=messages,
-                    temperature=config.LLM_TEMPERATURE,
-                    max_tokens=config.LLM_MAX_TOKENS,
-                ) 
-                content = response["choices"][0]["message"]["content"].strip()
-                
+                content = self.generate_text(messages)
             except (KeyError, IndexError, AttributeError) as e:
-                    print('Create_chat_completion is not available ')
-                    raise e
+                print("MLX model generation is not available")
+                raise e
             
             print(f"Answer:{content}")
             messages.append({"role":"assistant", "content":content})
             # Save assistant response to persistent memory
             self.memory.add(f"Assistant: {content}")    
-            #TODO: regex can be brittle, consider using a more robust JSON extraction method
             candidate = content.strip()
             
             try:

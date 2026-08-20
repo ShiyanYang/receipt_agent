@@ -27,7 +27,8 @@ class Config:
     """Base configuration with sensible defaults."""
     
     # ============ LLM Settings ============
-    MODEL_PATH = os.getenv("MODEL_PATH", "./models/llama-3-8b-instruct.gguf")
+    # MLX loads local model directories, not individual GGUF files.
+    MODEL_PATH = os.getenv("MODEL_PATH", "./models/llama-3-8b-instruct-mlx")
     LLM_N_CTX = int(os.getenv("LLM_N_CTX", "2048"))
     LLM_N_THREADS = int(os.getenv("LLM_N_THREADS", "4"))
     LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.0"))
@@ -47,9 +48,17 @@ class Config:
     
     @classmethod
     def validate(cls) -> bool:
-        """Validate that all required files/paths exist."""
-        if not os.path.exists(cls.MODEL_PATH):
-            raise FileNotFoundError(f"Model file not found: {cls.MODEL_PATH}")
+        """Validate the local MLX model directory."""
+        model_path = Path(os.path.expanduser(cls.MODEL_PATH))
+        if not model_path.is_dir():
+            raise FileNotFoundError(
+                f"MLX model directory not found: {model_path}. "
+                "Convert or download an MLX model into this directory."
+            )
+        if not (model_path / "config.json").is_file():
+            raise FileNotFoundError(f"Missing MLX model config: {model_path / 'config.json'}")
+        if not list(model_path.glob("model*.safetensors")):
+            raise FileNotFoundError(f"Missing MLX safetensors weights in: {model_path}")
         
         # Ensure directories exist
         Path("data").mkdir(exist_ok=True)
@@ -78,7 +87,7 @@ class ProductionConfig(Config):
 
 class TestingConfig(Config):
     """Testing configuration with small/fast model."""
-    MODEL_PATH = os.getenv("MODEL_PATH", "./models/test-tiny.gguf")
+    MODEL_PATH = os.getenv("MODEL_PATH", "mlx-community/Llama-3-8B-Instruct-4bit")
     LLM_N_THREADS = 2
     LLM_MAX_TOKENS = 256
     LOG_LEVEL = "DEBUG"
