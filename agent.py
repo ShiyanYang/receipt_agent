@@ -1,5 +1,6 @@
 
 from mlx_lm import generate, load
+from mlx_lm.sample_utils import make_sampler
 from pantry import list_items
 from memory import Memory
 from config import config
@@ -72,12 +73,13 @@ class Agent:
             tokenize=False,
             add_generation_prompt=True,
         )
+        sampler = make_sampler(temp = config.LLM_TEMPERATURE if temperature is None else temperature)
         return generate(
             self.llm,
             self.tokenizer,
             prompt=prompt,
             max_tokens=max_tokens or config.LLM_MAX_TOKENS,
-            temp=config.LLM_TEMPERATURE if temperature is None else temperature,
+            sampler=sampler,
         ).strip()
         
     def search_pantry(self) -> Optional[List[str]]:
